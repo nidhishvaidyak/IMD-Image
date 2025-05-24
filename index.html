@@ -9,10 +9,70 @@
       margin: 0; 
       padding: 0; 
       height: 100%; 
-      background: #000;
       overflow: hidden;
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
       color: #eee;
+      position: relative;
+      background: #000; /* fallback */
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: linear-gradient(135deg, #1e2a38 0%, #283845 40%, #0c1521 100%);
+      z-index: -1;
+      filter: saturate(0.8) brightness(0.9);
+    }
+
+    /* Busy spinner container */
+    #loadingSpinner {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 2000;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+      color: #4fc3f7;
+      font-weight: 600;
+      font-size: 16px;
+      user-select: none;
+    }
+
+    /* Spinner animation */
+    .spinner {
+      border: 5px solid rgba(79,195,247,0.2);
+      border-top: 5px solid #4fc3f7;
+      border-radius: 50%;
+      width: 48px;
+      height: 48px;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg);}
+      100% { transform: rotate(360deg);}
+    }
+
+    /* Hide zoom container and time while loading */
+    #zoomContainer,
+    #timeContainer,
+    #credit {
+      visibility: hidden;
+      opacity: 0;
+      transition: opacity 0.5s ease, visibility 0.5s ease;
+    }
+
+    /* Show when loaded */
+    #zoomContainer.visible,
+    #timeContainer.visible,
+    #credit.visible {
+      visibility: visible;
+      opacity: 1;
     }
 
     #timeContainer {
@@ -77,7 +137,7 @@
       display: flex;
       justify-content: center;
       align-items: center;
-      background: #000;
+      background: transparent;
       user-select: none;
       -webkit-user-drag: none;
     }
@@ -104,13 +164,14 @@
     }
 
     #authorName {
-      font-size: 16px;
+      font-size: 20px;
       color: #eee;
       text-align: center;
-      font-weight: 500;
+      font-weight: 600;
       opacity: 0.9;
       transition: color 0.3s ease;
       cursor: pointer;
+      user-select: none;
     }
 
     #authorName:hover {
@@ -137,6 +198,11 @@
   </style>
 </head>
 <body>
+  <div id="loadingSpinner" role="alert" aria-live="assertive" aria-busy="true">
+    <div class="spinner"></div>
+    Loading satellite image...
+  </div>
+
   <div id="timeContainer" aria-live="polite" aria-atomic="true" aria-label="Current local time and social links">
     <div id="time"></div>
     <div id="socialTopRight" aria-label="Social media links">
@@ -190,9 +256,32 @@
     setInterval(updateTime, 1000);
     updateTime();
 
-    document.getElementById('zoomContainer').addEventListener('click', () => {
-      document.getElementById('zoomContainer').classList.toggle('zoomed');
+    const zoomContainer = document.getElementById('zoomContainer');
+    zoomContainer.addEventListener('click', () => {
+      zoomContainer.classList.toggle('zoomed');
     });
+
+    // Wait for image to load before showing UI and hiding spinner
+    const satImage = document.getElementById('satImage');
+    const loadingSpinner = document.getElementById('loadingSpinner');
+    const timeContainer = document.getElementById('timeContainer');
+    const credit = document.getElementById('credit');
+
+    satImage.onload = () => {
+      // Hide spinner
+      loadingSpinner.style.display = 'none';
+
+      // Show UI elements
+      zoomContainer.classList.add('visible');
+      timeContainer.classList.add('visible');
+      credit.classList.add('visible');
+    };
+
+    // Optionally, handle image load error:
+    satImage.onerror = () => {
+      loadingSpinner.textContent = "Failed to load satellite image.";
+      loadingSpinner.style.color = "red";
+    };
   </script>
 </body>
 </html>
