@@ -1,287 +1,339 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Fullscreen IMD Satellite Image</title>
-  <style>
-    html, body {
-      margin: 0; 
-      padding: 0; 
-      height: 100%; 
-      overflow: hidden;
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      color: #eee;
-      position: relative;
-      background: #000; /* fallback */
-    }
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>IMD Satellite Image</title>
+    <style>
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        height: 100%;
+        overflow: hidden;
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        color: #eee;
+        position: relative;
+        background: #000; /* fallback */
+      }
 
-    body::before {
-      content: "";
-      position: fixed;
-      top: 0; left: 0;
-      width: 100%; height: 100%;
-      background: linear-gradient(135deg, #1e2a38 0%, #283845 40%, #0c1521 100%);
-      z-index: -1;
-      filter: saturate(0.8) brightness(0.9);
-    }
+      body::before {
+        content: "";
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(
+          135deg,
+          #1e2a38 0%,
+          #283845 40%,
+          #0c1521 100%
+        );
+        z-index: -1;
+        filter: saturate(0.8) brightness(0.9);
+      }
 
-    /* Busy spinner container */
-    #loadingSpinner {
-      position: fixed;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      z-index: 2000;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 12px;
-      color: #4fc3f7;
-      font-weight: 600;
-      font-size: 16px;
-      user-select: none;
-    }
+      /* Busy spinner container */
+      #loadingSpinner {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        z-index: 2000;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 12px;
+        color: #4fc3f7;
+        font-weight: 600;
+        font-size: 16px;
+        user-select: none;
+      }
 
-    /* Spinner animation */
-    .spinner {
-      border: 5px solid rgba(79,195,247,0.2);
-      border-top: 5px solid #4fc3f7;
-      border-radius: 50%;
-      width: 48px;
-      height: 48px;
-      animation: spin 1s linear infinite;
-    }
+      /* Spinner animation */
+      .spinner {
+        border: 5px solid rgba(79, 195, 247, 0.2);
+        border-top: 5px solid #4fc3f7;
+        border-radius: 50%;
+        width: 48px;
+        height: 48px;
+        animation: spin 1s linear infinite;
+      }
 
-    @keyframes spin {
-      0% { transform: rotate(0deg);}
-      100% { transform: rotate(360deg);}
-    }
+      @keyframes spin {
+        0% {
+          transform: rotate(0deg);
+        }
+        100% {
+          transform: rotate(360deg);
+        }
+      }
 
-    /* Hide zoom container and time while loading */
-    #zoomContainer,
-    #timeContainer,
-    #credit {
-      visibility: hidden;
-      opacity: 0;
-      transition: opacity 0.5s ease, visibility 0.5s ease;
-    }
+      /* Hide zoom container and time while loading */
+      #zoomContainer,
+      #timeContainer,
+      #credit {
+        visibility: hidden;
+        opacity: 0;
+        transition: opacity 0.5s ease, visibility 0.5s ease;
+      }
 
-    /* Show when loaded */
-    #zoomContainer.visible,
-    #timeContainer.visible,
-    #credit.visible {
-      visibility: visible;
-      opacity: 1;
-    }
+      /* Show when loaded */
+      #zoomContainer.visible,
+      #timeContainer.visible,
+      #credit.visible {
+        visibility: visible;
+        opacity: 1;
+      }
 
-    #timeContainer {
-      position: fixed;
-      top: 10px;
-      right: 15px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 6px;
-      background: rgba(0,0,0,0.5);
-      padding: 8px 14px;
-      border-radius: 8px;
-      user-select: none;
-      z-index: 1000;
-    }
+      #timeContainer {
+        position: fixed;
+        top: 10px;
+        right: 15px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 6px;
+        background: rgba(0, 0, 0, 0.5);
+        padding: 8px 14px;
+        border-radius: 8px;
+        user-select: none;
+        z-index: 1000;
+      }
 
-    #time {
-      font-size: 16px;
-      font-weight: 500;
-      line-height: 1;
-      color: #eee;
-      transition: color 0.3s ease;
-      cursor: pointer;
-    }
+      #time {
+        font-size: 16px;
+        font-weight: 500;
+        line-height: 1;
+        color: #eee;
+        transition: color 0.3s ease;
+        cursor: pointer;
+      }
 
-    #time:hover {
-      color: #4fc3f7;
-    }
+      #time:hover {
+        color: #4fc3f7;
+      }
 
-    #socialTopRight {
-      display: flex;
-      gap: 16px;
-    }
+      #socialTopRight {
+        display: flex;
+        gap: 16px;
+      }
 
-    #socialTopRight a {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      color: #eee;
-      text-decoration: none;
-      transition: color 0.3s ease;
-      width: 35px;
-      height: 35px;
-    }
+      #socialTopRight a {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        color: #eee;
+        text-decoration: none;
+        transition: color 0.3s ease;
+        width: 35px;
+        height: 35px;
+      }
 
-    #socialTopRight a:hover {
-      color: #4fc3f7;
-    }
+      #socialTopRight a:hover {
+        color: #4fc3f7;
+      }
 
-    #socialTopRight svg {
-      fill: currentColor;
-      width: 24px;
-      height: 24px;
-    }
+      #socialTopRight svg {
+        fill: currentColor;
+        width: 24px;
+        height: 24px;
+      }
 
-    #zoomContainer {
-      width: 100vw;
-      height: 100vh;
-      cursor: zoom-in;
-      overflow: hidden;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      background: transparent;
-      user-select: none;
-      -webkit-user-drag: none;
-    }
+      #zoomContainer {
+        width: 100vw;
+        height: 100vh;
+        cursor: zoom-in;
+        overflow: hidden;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        background: transparent;
+        user-select: none;
+        -webkit-user-drag: none;
+      }
 
-    #zoomContainer.zoomed {
-      cursor: zoom-out;
-      overflow: auto;
-    }
+      #zoomContainer.zoomed {
+        cursor: zoom-out;
+        overflow: auto;
+      }
 
-    #satImage {
-      max-width: 100%;
-      max-height: 100%;
-      height: auto;
-      display: block;
-      transition: transform 0.3s ease;
-      pointer-events: none;
-      user-select: none;
-      -webkit-user-drag: none;
-    }
+      #satImage {
+        max-width: 100%;
+        max-height: 100%;
+        height: auto;
+        display: block;
+        transition: transform 0.3s ease;
+        pointer-events: none;
+        user-select: none;
+        -webkit-user-drag: none;
+      }
 
-    #zoomContainer.zoomed #satImage {
-      transform: scale(2);
-      pointer-events: auto;
-    }
+      #zoomContainer.zoomed #satImage {
+        transform: scale(2);
+        pointer-events: auto;
+      }
 
-    #authorName {
-      font-size: 18px;
-      font-weight: 500;
-      color: #eee;
-      text-align: center;
-      opacity: 0.9;
-      transition: color 0.3s ease;
-      cursor: pointer;
-      user-select: none;
-    }
+      #authorName {
+        font-size: 18px;
+        font-weight: 500;
+        color: #eee;
+        text-align: center;
+        opacity: 0.9;
+        transition: color 0.3s ease;
+        cursor: pointer;
+        user-select: none;
+      }
 
-    #authorName:hover {
-      color: #4fc3f7;
-    }
+      #authorName:hover {
+        color: #4fc3f7;
+      }
 
-    #credit {
-      position: fixed;
-      bottom: 12px;
-      left: 50%;
-      transform: translateX(-50%);
-      font-size: 12px;
-      color: #aaa;
-      background: rgba(0,0,0,0.4);
-      padding: 4px 10px;
-      border-radius: 12px;
-      user-select: none;
-      font-style: italic;
-      z-index: 1000;
-      pointer-events: none;
-      max-width: 90vw;
-      text-align: center;
-    }
-  </style>
-</head>
-<body>
-  <div id="loadingSpinner" role="alert" aria-live="assertive" aria-busy="true">
-    <div class="spinner"></div>
-    Loading satellite image...
-  </div>
-
-  <div id="timeContainer" aria-live="polite" aria-atomic="true" aria-label="Current local time and social links">
-    <div id="time"></div>
-    <div id="socialTopRight" aria-label="Social media links">
-      <a href="https://github.com/nidhishvaidyak" target="_blank" rel="noopener noreferrer" aria-label="GitHub Profile">
-        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-          <path d="M12 0C5.372 0 0 5.372 0 12c0 5.303 3.438 9.8 8.205 11.387.6.11.82-.26.82-.577v-2.234c-3.338.726-4.042-1.61-4.042-1.61-.546-1.387-1.333-1.757-1.333-1.757-1.09-.745.083-.73.083-.73 1.205.085 1.84 1.237 1.84 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.774.42-1.305.763-1.605-2.665-.303-5.467-1.334-5.467-5.933 0-1.31.47-2.38 1.235-3.22-.124-.303-.535-1.523.117-3.176 0 0 1.008-.322 3.3 1.23a11.52 11.52 0 013.003-.404 11.5 11.5 0 013.003.404c2.29-1.552 3.296-1.23 3.296-1.23.653 1.653.242 2.873.12 3.176.77.84 1.234 1.91 1.234 3.22 0 4.61-2.807 5.627-5.48 5.922.43.37.81 1.1.81 2.22v3.293c0 .32.218.694.825.576C20.565 21.796 24 17.3 24 12c0-6.628-5.373-12-12-12z"/>
-        </svg>
-      </a>
-      <a href="https://www.linkedin.com/in/nidhish-vaidya-k-82935015b" target="_blank" rel="noopener noreferrer" aria-label="LinkedIn Profile">
-        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-          <path d="M4.98 3.5C4.98 5.156 3.72 6.5 2 6.5S-.001 5.156-.001 3.5C-.001 1.84 1.26.5 3 .5s1.98 1.34 1.98 3zm.02 4.5H0V24h5V8h-.02zm7.337 0H7.01v16h5v-8.1c0-4.64 6-5 6 0V24h5V14.2c0-7.64-8.503-7.35-10.7-3.6z"/>
-        </svg>
-      </a>
+      #credit {
+        position: fixed;
+        bottom: 12px;
+        left: 50%;
+        transform: translateX(-50%);
+        font-size: 12px;
+        color: #aaa;
+        background: rgba(0, 0, 0, 0.4);
+        padding: 4px 10px;
+        border-radius: 12px;
+        user-select: none;
+        font-style: italic;
+        z-index: 1000;
+        pointer-events: none;
+        max-width: 90vw;
+        text-align: center;
+      }
+    </style>
+  </head>
+  <body>
+    <div
+      id="loadingSpinner"
+      role="alert"
+      aria-live="assertive"
+      aria-busy="true"
+    >
+      <div class="spinner"></div>
+      Loading satellite image...
     </div>
-    <div id="authorName">Nidhish Vaidya K</div>
-  </div>
 
-  <div id="zoomContainer" tabindex="0" aria-label="Zoomable IMD Satellite Image container">
-    <img 
-      id="satImage" 
-      src="https://mausam.imd.gov.in/Satellite/3Dasiasec_ir1.jpg" 
-      alt="IMD Satellite Image" 
-      draggable="false"
-      role="img"
-    />
-  </div>
+    <div
+      id="timeContainer"
+      aria-live="polite"
+      aria-atomic="true"
+      aria-label="Current local time and social links"
+    >
+      <div id="time"></div>
+      <div id="socialTopRight" aria-label="Social media links">
+        <a
+          href="https://github.com/nidhishvaidyak"
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label="GitHub Profile"
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+            <path
+              d="M12 0C5.372 0 0 5.372 0 12c0 5.303 3.438 9.8 8.205 11.387.6.11.82-.26.82-.577v-2.234c-3.338.726-4.042-1.61-4.042-1.61-.546-1.387-1.333-1.757-1.333-1.757-1.09-.745.083-.73.083-.73 1.205.085 1.84 1.237 1.84 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.774.42-1.305.763-1.605-2.665-.303-5.467-1.334-5.467-5.933 0-1.31.47-2.38 1.235-3.22-.124-.303-.535-1.523.117-3.176 0 0 1.008-.322 3.3 1.23a11.52 11.52 0 013.003-.404 11.5 11.5 0 013.003.404c2.29-1.552 3.296-1.23 3.296-1.23.653 1.653.242 2.873.12 3.176.77.84 1.234 1.91 1.234 3.22 0 4.61-2.807 5.627-5.48 5.922.43.37.81 1.1.81 2.22v3.293c0 .32.218.694.825.576C20.565 21.796 24 17.3 24 12c0-6.628-5.373-12-12-12z"
+            />
+          </svg>
+        </a>
+        <a
+          href="https://www.linkedin.com/in/nidhish-vaidya-k-82935015b"
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label="LinkedIn Profile"
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+            <path
+              d="M4.98 3.5C4.98 5.156 3.72 6.5 2 6.5S-.001 5.156-.001 3.5C-.001 1.84 1.26.5 3 .5s1.98 1.34 1.98 3zm.02 4.5H0V24h5V8h-.02zm7.337 0H7.01v16h5v-8.1c0-4.64 6-5 6 0V24h5V14.2c0-7.64-8.503-7.35-10.7-3.6z"
+            />
+          </svg>
+        </a>
+      </div>
+      <div id="authorName">Nidhish Vaidya K</div>
+    </div>
 
-  <div id="credit" aria-label="Image credit">
-    Image © India Meteorological Department (IMD)
-  </div>
+    <div
+      id="zoomContainer"
+      tabindex="0"
+      aria-label="Zoomable IMD Satellite Image container"
+    >
+      <img
+        id="satImage"
+        src="https://mausam.imd.gov.in/Satellite/rswmo_ir1.jpg"
+        alt="IMD Satellite Image"
+        draggable="false"
+        role="img"
+      />
+    </div>
 
-  <script>
-    function updateTime() {
-      const timeEl = document.getElementById('time');
-      const now = new Date();
-      const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-      const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", 
-                      "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-      const day = days[now.getDay()];
-      const date = now.getDate().toString().padStart(2, '0');
-      const month = months[now.getMonth()];
-      let hours = now.getHours();
-      const minutes = now.getMinutes().toString().padStart(2, '0');
-      const ampm = hours >= 12 ? 'PM' : 'AM';
-      hours = hours % 12;
-      hours = hours ? hours : 12; // 0 -> 12
+    <div id="credit" aria-label="Image credit">
+      Image © India Meteorological Department (IMD)
+    </div>
 
-      timeEl.textContent = `${day} ${date} ${month} ${hours}:${minutes}${ampm}`;
-    }
+    <script>
+      function updateTime() {
+        const timeEl = document.getElementById("time");
+        const now = new Date();
+        const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+        const months = [
+          "Jan",
+          "Feb",
+          "Mar",
+          "Apr",
+          "May",
+          "Jun",
+          "Jul",
+          "Aug",
+          "Sep",
+          "Oct",
+          "Nov",
+          "Dec",
+        ];
+        const day = days[now.getDay()];
+        const date = now.getDate().toString().padStart(2, "0");
+        const month = months[now.getMonth()];
+        let hours = now.getHours();
+        const minutes = now.getMinutes().toString().padStart(2, "0");
+        const ampm = hours >= 12 ? "PM" : "AM";
+        hours = hours % 12;
+        hours = hours ? hours : 12; // 0 -> 12
 
-    setInterval(updateTime, 1000);
-    updateTime();
+        timeEl.textContent = `${day} ${date} ${month} ${hours}:${minutes}${ampm}`;
+      }
 
-    const zoomContainer = document.getElementById('zoomContainer');
-    zoomContainer.addEventListener('click', () => {
-      zoomContainer.classList.toggle('zoomed');
-    });
+      setInterval(updateTime, 1000);
+      updateTime();
 
-    // Wait for image to load before showing UI and hiding spinner
-    const satImage = document.getElementById('satImage');
-    const loadingSpinner = document.getElementById('loadingSpinner');
-    const timeContainer = document.getElementById('timeContainer');
-    const credit = document.getElementById('credit');
+      const zoomContainer = document.getElementById("zoomContainer");
+      zoomContainer.addEventListener("click", () => {
+        zoomContainer.classList.toggle("zoomed");
+      });
 
-    satImage.onload = () => {
-      // Hide spinner
-      loadingSpinner.style.display = 'none';
+      // Wait for image to load before showing UI and hiding spinner
+      const satImage = document.getElementById("satImage");
+      const loadingSpinner = document.getElementById("loadingSpinner");
+      const timeContainer = document.getElementById("timeContainer");
+      const credit = document.getElementById("credit");
 
-      // Show UI elements
-      zoomContainer.classList.add('visible');
-      timeContainer.classList.add('visible');
-      credit.classList.add('visible');
-    };
+      satImage.onload = () => {
+        // Hide spinner
+        loadingSpinner.style.display = "none";
 
-    // Optionally, handle image load error:
-    satImage.onerror = () => {
-      loadingSpinner.textContent = "Failed to load satellite image.";
-      loadingSpinner.style.color = "red";
-    };
-  </script>
-</body>
+        // Show UI elements
+        zoomContainer.classList.add("visible");
+        timeContainer.classList.add("visible");
+        credit.classList.add("visible");
+      };
+
+      // Optionally, handle image load error:
+      satImage.onerror = () => {
+        loadingSpinner.textContent = "Failed to load satellite image.";
+        loadingSpinner.style.color = "red";
+      };
+    </script>
+  </body>
 </html>
