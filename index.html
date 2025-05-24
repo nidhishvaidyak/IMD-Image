@@ -44,14 +44,18 @@
       overflow: hidden;
       border-radius: 12px;
       border: 2px solid #444;
-      cursor: pointer;
+      cursor: grab;
+      height: 500px;
     }
 
     .zoom-container img {
       width: 100%;
+      height: auto;
       display: block;
-      transition: transform 0.4s ease;
+      transition: transform 0.3s ease;
       transform-origin: center center;
+      user-select: none;
+      pointer-events: none;
     }
 
     a {
@@ -108,15 +112,60 @@
   <script>
     document.getElementById("year").textContent = new Date().getFullYear();
 
+    const container = document.getElementById("zoomContainer");
     const image = document.getElementById("satImage");
-    let zoomLevel = 1;
-    const maxZoom = 4;
-    const zoomStep = 0.5;
 
-    document.getElementById("zoomContainer").addEventListener("dblclick", () => {
+    let zoomLevel = 1;
+    const zoomStep = 0.5;
+    const maxZoom = 4;
+
+    let isDragging = false;
+    let startX = 0;
+    let startY = 0;
+    let offsetX = 0;
+    let offsetY = 0;
+
+    container.addEventListener("dblclick", () => {
       zoomLevel += zoomStep;
-      if (zoomLevel > maxZoom) zoomLevel = 1;
-      image.style.transform = `scale(${zoomLevel})`;
+      if (zoomLevel > maxZoom) {
+        zoomLevel = 1;
+        offsetX = 0;
+        offsetY = 0;
+      }
+      applyTransform();
+    });
+
+    function applyTransform() {
+      image.style.transform = `scale(${zoomLevel}) translate(${offsetX / zoomLevel}px, ${offsetY / zoomLevel}px)`;
+    }
+
+    container.addEventListener("mousedown", (e) => {
+      if (zoomLevel === 1) return; // no drag at 1x
+      isDragging = true;
+      container.style.cursor = "grabbing";
+      startX = e.clientX;
+      startY = e.clientY;
+    });
+
+    container.addEventListener("mouseup", () => {
+      isDragging = false;
+      container.style.cursor = "grab";
+    });
+
+    container.addEventListener("mouseleave", () => {
+      isDragging = false;
+      container.style.cursor = "grab";
+    });
+
+    container.addEventListener("mousemove", (e) => {
+      if (!isDragging) return;
+      const dx = e.clientX - startX;
+      const dy = e.clientY - startY;
+      startX = e.clientX;
+      startY = e.clientY;
+      offsetX += dx;
+      offsetY += dy;
+      applyTransform();
     });
   </script>
 </body>
